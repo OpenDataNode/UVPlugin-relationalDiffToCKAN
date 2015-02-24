@@ -42,6 +42,8 @@ public class RelationalDiffToCkanHelperTest {
 
     private static final String TIMESTAMP_STRING = "2015-02-23T10:44:18";
 
+    private static final String EXPECTED_DELETE_RESOURCE_JSON = "{\"id\":\"" + RESOURCE_ID + "\"}";
+
     private static final String EXPECTED_FIELDS_JSON =
             "[{\"id\":\"id\",\"type\":\"Integer\"},"
                     + "{\"id\":\"name\",\"type\":\"Varchar\"},"
@@ -99,6 +101,12 @@ public class RelationalDiffToCkanHelperTest {
         JsonObject datastore = RelationalDiffToCkanHelper.buildDataStoreParameters(params);
 
         Assert.assertEquals(EXPECTED_DATASTORE_PARAMS_JSON, datastore.toString());
+    }
+
+    @Test
+    public void buildDeleteResourceParamters() {
+        JsonObject deleteResource = RelationalDiffToCkanHelper.buildDeleteResourceParamters(RESOURCE_ID);
+        Assert.assertEquals(EXPECTED_DELETE_RESOURCE_JSON, deleteResource.toString());
     }
 
     private ResultSet mockResultSet() throws SQLException, ParseException {

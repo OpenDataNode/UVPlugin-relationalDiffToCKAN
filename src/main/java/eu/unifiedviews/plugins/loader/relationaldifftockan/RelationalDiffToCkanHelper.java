@@ -199,6 +199,14 @@ public class RelationalDiffToCkanHelper {
         return fieldsBuilder.build();
     }
 
+    public static JsonObject buildDeleteResourceParamters(String resourceId) {
+        JsonBuilderFactory factory = Json.createBuilderFactory(Collections.<String, Object> emptyMap());
+        JsonObjectBuilder dataStoreBuilder = factory.createObjectBuilder();
+        dataStoreBuilder.add(RelationalDiffToCkan.CKAN_API_RESOURCE_ID, resourceId);
+
+        return dataStoreBuilder.build();
+    }
+
     public static JsonArray buildRecordsJson(ResultSet rs, List<ColumnDefinition> columns) throws SQLException {
         JsonBuilderFactory factory = Json.createBuilderFactory(Collections.<String, Object> emptyMap());
         JsonArrayBuilder recordsBuilder = factory.createArrayBuilder();

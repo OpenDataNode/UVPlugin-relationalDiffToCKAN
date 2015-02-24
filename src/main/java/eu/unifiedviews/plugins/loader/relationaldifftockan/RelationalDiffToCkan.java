@@ -79,6 +79,8 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
 
     public static final String CKAN_API_RESOURCE_CREATE = "resource_create";
 
+    public static final String CKAN_API_RESOURCE_DELETE = "resource_delete";
+
     public static final String CKAN_API_DATASTORE_CREATE = "audited_datastore_create";
 
     public static final String CKAN_API_DATASTORE_UPDATE = "audited_datastore_update";
@@ -88,6 +90,8 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
     public static final String PROXY_API_STORAGE_ID = "storage_id";
 
     public static final String PROXY_API_DATA = "data";
+
+    public static final String CKAN_API_RESOURCE_ID = "id";
 
     public static final String CKAN_DATASTORE_RESOURCE_ID = "resource_id";
 
@@ -172,8 +176,13 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                     } else {
                         LOG.info("Resource does not exist yet, it will be created");
                         String resourceId = createCkanResource(entry, apiConfig);
-                        createAuditedDatastoreFromTable(entry, resourceId, apiConfig);
-                        LOG.info("Resource and datastore for table {} successfully created", sourceTableName);
+                        try {
+                            createAuditedDatastoreFromTable(entry, resourceId, apiConfig);
+                            LOG.info("Resource and datastore for table {} successfully created", sourceTableName);
+                        } catch (Exception e) {
+                            LOG.debug("Failed to create datastore for resource {}, going to delete resource", resourceId);
+                            deleteCkanResource(resourceId, apiConfig);
+                        }
                         this.context.sendMessage(DPUContext.MessageType.INFO,
                                 this.messages.getString("dpu.resource.created", sourceTableName));
                     }
@@ -273,10 +282,10 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                 JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
                 JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
                 JsonObject createdResource = reader.readObject().getJsonObject("result");
-                if (!createdResource.containsKey("id")) {
+                if (!createdResource.containsKey(CKAN_API_RESOURCE_ID)) {
                     throw new Exception("Missing resource ID of the newly created CKAN resource");
                 }
-                resourceId = createdResource.getString("id");
+                resourceId = createdResource.getString(CKAN_API_RESOURCE_ID);
             } else {
                 LOG.error("Response:" + EntityUtils.toString(response.getEntity()));
                 throw new Exception("Failed to create CKAN resource");
@@ -289,6 +298,41 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
         }
 
         return resourceId;
+    }
+
+    private void deleteCkanResource(String resourceId, CatalogApiConfig apiConfig) {
+        CloseableHttpClient client = HttpClients.createDefault();
+        CloseableHttpResponse response = null;
+        try {
+
+            URIBuilder uriBuilder = new URIBuilder(apiConfig.getCatalogApiLocation());
+
+            uriBuilder.setPath(uriBuilder.getPath());
+            HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            HttpEntity entity = MultipartEntityBuilder.create()
+                    .addTextBody(PROXY_API_ACTION, CKAN_API_RESOURCE_DELETE, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_PIPELINE_ID, String.valueOf(apiConfig.getPipelineId()), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_USER_ID, apiConfig.getUserId(), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_TOKEN, apiConfig.getToken(), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_DATA, RelationalDiffToCkanHelper.buildDeleteResourceParamters(resourceId).toString(),
+                            ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .build();
+            httpPost.setEntity(entity);
+            response = client.execute(httpPost);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                this.context.sendMessage(MessageType.WARNING, this.messages.getString("errors.resource.delete"),
+                        this.messages.getString("errors.resource.delete.long"));
+            } else {
+                LOG.debug("Resource {} was successfully deleted", resourceId);
+            }
+        } catch (IOException | URISyntaxException | ParseException e) {
+            LOG.error("Exception occurred during deleting CKAN resource", e);
+            this.context.sendMessage(MessageType.WARNING, this.messages.getString("errors.resource.delete"),
+                    this.messages.getString("errors.resource.delete.long"));
+        } finally {
+            RelationalDiffToCkanHelper.tryCloseHttpResponse(response);
+            RelationalDiffToCkanHelper.tryCloseHttpClient(client);
+        }
     }
 
     /**
@@ -310,7 +354,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             Resource resource = ResourceHelpers.getResource(this.tablesInput, table.getSymbolicName());
             resource.setName(storageId);
             JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
-            resourceBuilder.add("id", resourceId);
+            resourceBuilder.add(CKAN_API_RESOURCE_ID, resourceId);
 
             URIBuilder uriBuilder = new URIBuilder(apiConfig.getCatalogApiLocation());
             uriBuilder.setPath(uriBuilder.getPath());
@@ -406,6 +450,15 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
         }
     }
 
+    /**
+     * Updates data from input database table into CKAN datastore
+     * Can be called only if resource and datastore already exist
+     * 
+     * @param table
+     * @param resourceId
+     * @param apiConfig
+     * @throws Exception
+     */
     private void updateAuditedDatastoreFromTable(Entry table, String resourceId, CatalogApiConfig apiConfig) throws Exception {
         Connection conn = null;
         ResultSet tableData = null;
@@ -439,8 +492,9 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             httpPost.setEntity(entity);
 
             response = client.execute(httpPost);
+            // TODO: get reason of failure from response; Problem: how to translate this message
             if (response.getStatusLine().getStatusCode() != 200) {
-                LOG.error("Response:" + EntityUtils.toString(response.getEntity()));
+                LOG.error("Response: " + EntityUtils.toString(response.getEntity()));
                 throw new Exception("Failed to update CKAN datastore");
             }
         } catch (DataUnitException | SQLException | URISyntaxException | IOException ex) {
