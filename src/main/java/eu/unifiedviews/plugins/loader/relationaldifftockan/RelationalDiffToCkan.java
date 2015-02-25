@@ -127,23 +127,17 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
         String shortMessage = this.messages.getString("dpu.ckan.starting", this.getClass().getSimpleName());
         this.context.sendMessage(DPUContext.MessageType.INFO, shortMessage);
 
-        // TODO: not implemented yet
-//        Map<String, String> environment = this.context.getEnvironment();
-//        long pipelineId = this.context.getPipelineId();
-//        String userId = this.context.getPipelineOwner();
-//        String token = environment.get(SECRET_TOKEN);
-//        if (token == null || token.isEmpty()) {
-//            throw new DPUException(this.messages.getString("errors.token.missing"));
-//        }
-//        String catalogApiLocation = environment.get("catalogApiLocation");
-//        if (catalogApiLocation != null || catalogApiLocation.isEmpty()) {
-//            throw new DPUException(this.messages.getString("errors.api.missing"));
-//        }
-
-        String catalogApiLocation = "http://edem.eea.sk:81/api/action/internal_api";
-        Long pipelineId = 3L;
-        String userId = "mvi";
-        String token = "secret_token";
+        Map<String, String> environment = this.context.getEnvironment();
+        long pipelineId = this.context.getPipelineId();
+        String userId = this.context.getPipelineOwner();
+        String token = environment.get(SECRET_TOKEN);
+        if (token == null || token.isEmpty()) {
+            throw new DPUException(this.messages.getString("errors.token.missing"));
+        }
+        String catalogApiLocation = environment.get("catalogApiLocation");
+        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
+            throw new DPUException(this.messages.getString("errors.api.missing"));
+        }
 
         CatalogApiConfig apiConfig = new CatalogApiConfig(catalogApiLocation, pipelineId, userId, token);
 
