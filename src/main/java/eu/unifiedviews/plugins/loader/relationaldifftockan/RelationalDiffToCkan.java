@@ -219,7 +219,8 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                     .build();
             httpPost.setEntity(entity);
             response = client.execute(httpPost);
-            if (response.getStatusLine().getStatusCode() != 200) {
+            if (response.getStatusLine().getStatusCode() != 200 || !checkResponseSuccess(response)) {
+                LOG.error("Response from CKAN: {}", EntityUtils.toString(response.getEntity()));
                 throw new DPUException(this.messages.getString("dpu.resource.dataseterror", EntityUtils.toString(response.getEntity())));
             }
 
@@ -274,7 +275,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             httpPost.setEntity(entity);
 
             response = client.execute(httpPost);
-            if (response.getStatusLine().getStatusCode() == 200) {
+            if (response.getStatusLine().getStatusCode() == 200 && checkResponseSuccess(response)) {
                 JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
                 JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
                 JsonObject createdResource = reader.readObject().getJsonObject("result");
@@ -283,7 +284,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                 }
                 resourceId = createdResource.getString(CKAN_API_RESOURCE_ID);
             } else {
-                LOG.error("Response:" + EntityUtils.toString(response.getEntity()));
+                LOG.error("Response: {}", EntityUtils.toString(response.getEntity()));
                 throw new Exception("Failed to create CKAN resource");
             }
         } catch (ParseException | IOException | DataUnitException | URISyntaxException e) {
@@ -315,7 +316,8 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                     .build();
             httpPost.setEntity(entity);
             response = client.execute(httpPost);
-            if (response.getStatusLine().getStatusCode() != 200) {
+            if (response.getStatusLine().getStatusCode() != 200 || !checkResponseSuccess(response)) {
+                LOG.error("Response: {}", EntityUtils.toString(response.getEntity()));
                 this.context.sendMessage(MessageType.WARNING, this.messages.getString("errors.resource.delete"),
                         this.messages.getString("errors.resource.delete.long"));
             } else {
@@ -364,14 +366,14 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             httpPost.setEntity(entity);
 
             response = client.execute(httpPost);
-            if (response.getStatusLine().getStatusCode() == 200) {
-                LOG.info("Response:" + EntityUtils.toString(response.getEntity()));
+            if (response.getStatusLine().getStatusCode() == 200 && checkResponseSuccess(response)) {
+                LOG.info("CKAN resource {} was successfully updated", resourceId);
             } else {
-                LOG.error("Response:" + EntityUtils.toString(response.getEntity()));
-                throw new Exception("Failed to update CKAN resource");
+                LOG.error("Response: {}", EntityUtils.toString(response.getEntity()));
+                throw new Exception("Failed to update CKAN resource " + resourceId);
             }
         } catch (ParseException | IOException | DataUnitException | URISyntaxException e) {
-            throw new Exception("Error updating resource", e);
+            throw new Exception("Error updating resource " + resourceId, e);
         } finally {
             RelationalDiffToCkanHelper.tryCloseHttpResponse(response);
             RelationalDiffToCkanHelper.tryCloseHttpClient(client);
@@ -433,8 +435,8 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             httpPost.setEntity(entity);
 
             response = client.execute(httpPost);
-            if (response.getStatusLine().getStatusCode() != 200) {
-                LOG.error("Response:" + EntityUtils.toString(response.getEntity()));
+            if (response.getStatusLine().getStatusCode() != 200 || !checkResponseSuccess(response)) {
+                LOG.error("Response: {}", EntityUtils.toString(response.getEntity()));
                 throw new Exception("Failed to create CKAN datastore");
             }
         } catch (DataUnitException | SQLException | URISyntaxException | IOException ex) {
@@ -488,9 +490,8 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             httpPost.setEntity(entity);
 
             response = client.execute(httpPost);
-            // TODO: get reason of failure from response; Problem: how to translate this message
-            if (response.getStatusLine().getStatusCode() != 200) {
-                LOG.error("Response: " + EntityUtils.toString(response.getEntity()));
+            if (response.getStatusLine().getStatusCode() != 200 || !checkResponseSuccess(response)) {
+                LOG.error("Response: {}", EntityUtils.toString(response.getEntity()));
                 throw new Exception("Failed to update CKAN datastore");
             }
         } catch (DataUnitException | SQLException | URISyntaxException | IOException ex) {
@@ -554,6 +555,16 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
         resourceBuilder.add("url", "datastore");
 
         return resourceBuilder;
+    }
+
+    private boolean checkResponseSuccess(CloseableHttpResponse response) throws IllegalStateException, IOException {
+        JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
+        JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
+        boolean bResult = reader.readObject().getBoolean("success");
+
+        LOG.debug("CKAN success response value: {}", bResult);
+
+        return bResult;
     }
 
 }
