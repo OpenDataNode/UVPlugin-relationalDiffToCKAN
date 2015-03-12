@@ -283,16 +283,16 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             if (response.getStatusLine().getStatusCode() == 200) {
                 JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
                 JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
-                JsonObject responseJson = reader.readObject().getJsonObject("result");
+                JsonObject responseJson = reader.readObject();
 
                 if (!checkResponseSuccess(responseJson)) {
                     throw new DPUException(this.messages.getString("dpu.resource.responseerror"));
                 }
 
-                if (!responseJson.containsKey(CKAN_API_RESOURCE_ID)) {
+                if (!responseJson.getJsonObject("result").containsKey(CKAN_API_RESOURCE_ID)) {
                     throw new Exception("Missing resource ID of the newly created CKAN resource");
                 }
-                resourceId = responseJson.getString(CKAN_API_RESOURCE_ID);
+                resourceId = responseJson.getJsonObject("result").getString(CKAN_API_RESOURCE_ID);
             } else {
                 LOG.error("Response: {}", EntityUtils.toString(response.getEntity()));
                 throw new Exception("Failed to create CKAN resource");
@@ -331,16 +331,12 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                 this.context.sendMessage(MessageType.WARNING, this.messages.getString("errors.resource.delete"),
                         this.messages.getString("errors.resource.delete.long"));
             } else {
-                JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
-                JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
-                JsonObject responseJson = reader.readObject();
-                if (!checkResponseSuccess(responseJson)) {
+                if (!checkResponseSuccess(response)) {
                     this.context.sendMessage(MessageType.WARNING, this.messages.getString("errors.resource.delete"),
                             this.messages.getString("errors.resource.delete.long"));
                 } else {
                     LOG.debug("Resource {} was successfully deleted", resourceId);
                 }
-
             }
         } catch (IOException | URISyntaxException | ParseException e) {
             LOG.error("Exception occurred during deleting CKAN resource", e);
@@ -386,10 +382,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
 
             response = client.execute(httpPost);
             if (response.getStatusLine().getStatusCode() == 200) {
-                JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
-                JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
-                JsonObject responseJson = reader.readObject();
-                if (!checkResponseSuccess(responseJson)) {
+                if (!checkResponseSuccess(response)) {
                     throw new Exception("Failed to update CKAN resource " + resourceId);
                 }
             } else {
@@ -464,10 +457,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                 throw new Exception("Failed to create CKAN datastore");
             }
 
-            JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
-            JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
-            JsonObject responseJson = reader.readObject();
-            if (!checkResponseSuccess(responseJson)) {
+            if (!checkResponseSuccess(response)) {
                 throw new Exception("Failed to create CKAN datastore");
             }
 
@@ -527,10 +517,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                 throw new Exception("Failed to update CKAN datastore");
             }
 
-            JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
-            JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
-            JsonObject responseJson = reader.readObject();
-            if (!checkResponseSuccess(responseJson)) {
+            if (!checkResponseSuccess(response)) {
                 throw new Exception("Failed to update CKAN datastore");
             }
 
@@ -598,6 +585,22 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
     }
 
     private boolean checkResponseSuccess(JsonObject responseJson) throws IllegalStateException, IOException {
+        boolean bSuccess = responseJson.getBoolean("success");
+
+        LOG.debug("CKAN success response value: {}", bSuccess);
+        if (!bSuccess) {
+            String errorMessage = responseJson.getJsonObject("error").toString();
+            LOG.error("CKAN error response: {}", errorMessage);
+        }
+
+        return bSuccess;
+    }
+
+    private boolean checkResponseSuccess(CloseableHttpResponse response) throws IllegalStateException, IOException {
+        JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
+        JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
+        JsonObject responseJson = reader.readObject();
+
         boolean bSuccess = responseJson.getBoolean("success");
 
         LOG.debug("CKAN success response value: {}", bSuccess);
