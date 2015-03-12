@@ -103,7 +103,9 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
 
     public static final String CKAN_DATASTORE_INDEXES = "indexes";
 
-    public static final String SECRET_TOKEN = "secret_token";
+    public static final String SECRET_TOKEN = "dpu.l-relationalDiffToCkan.secret.token";
+
+    public static final String CATALOG_API_URL = "dpu.l-relationalDiffToCkan.catalog.api.url";
 
     private Messages messages;
 
@@ -134,7 +136,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
         if (token == null || token.isEmpty()) {
             throw new DPUException(this.messages.getString("errors.token.missing"));
         }
-        String catalogApiLocation = environment.get("catalogApiLocation");
+        String catalogApiLocation = environment.get(CATALOG_API_URL);
         if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
             throw new DPUException(this.messages.getString("errors.api.missing"));
         }
