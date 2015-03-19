@@ -1,14 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>eu.unifiedviews.plugins</groupId>
-    <artifactId>dpu-base-pom</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
+    <groupId>eu.unifiedviews</groupId>
+    <artifactId>uv-pom-dpu</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
     <relativePath/>
   </parent>
   
+  <groupId>eu.unifiedviews.plugins</groupId>
   <artifactId>uv-l-relationaldiffToCkan</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
   <packaging>bundle</packaging>
   <name>L-RelationalDiffToCkan</name>
   <description>Performs update of input relational data into CKAN datastore using CKAN API and thin proxy</description>
@@ -19,6 +20,8 @@
 		<mockito.version>1.10.8</mockito.version>
 		<powermock.version>1.6.1</powermock.version>
 		<junit.version>4.12</junit.version>
+		<uv.helpers.version>[2.0.0-SNAPSHOT,3.0.0)</uv.helpers.version>
+		<module-test.version>2.0.0-SNAPSHOT</module-test.version>
 	</properties>
   
   <dependencies>
@@ -55,6 +58,20 @@
 			<groupId>org.glassfish</groupId>
 			<artifactId>javax.json</artifactId>
 			<version>1.0.4</version>
+			<scope>compile</scope>
+		</dependency>
+		
+		<!-- UnifiedViews helpers. -->
+		<dependency>
+			<groupId>eu.unifiedviews</groupId>
+			<artifactId>uv-dataunit-helpers</artifactId>
+			<version>${uv.helpers.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>eu.unifiedviews</groupId>
+			<artifactId>uv-dpu-helpers</artifactId>
+			<version>${uv.helpers.version}</version>
 			<scope>compile</scope>
 		</dependency>
 		

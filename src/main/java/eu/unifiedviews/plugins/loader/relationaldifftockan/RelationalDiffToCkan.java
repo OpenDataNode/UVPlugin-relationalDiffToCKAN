@@ -40,14 +40,14 @@ import eu.unifiedviews.dataunit.relational.RelationalDataUnit;
 import eu.unifiedviews.dataunit.relational.RelationalDataUnit.Entry;
 import eu.unifiedviews.dpu.DPU;
 import eu.unifiedviews.dpu.DPUContext;
-import eu.unifiedviews.dpu.DPUContext.MessageType;
 import eu.unifiedviews.dpu.DPUException;
-import eu.unifiedviews.helpers.dataunit.relationalhelper.RelationalHelper;
-import eu.unifiedviews.helpers.dataunit.resourcehelper.Resource;
-import eu.unifiedviews.helpers.dataunit.resourcehelper.ResourceConverter;
-import eu.unifiedviews.helpers.dataunit.resourcehelper.ResourceHelpers;
-import eu.unifiedviews.helpers.dpu.NonConfigurableBase;
-import eu.unifiedviews.helpers.dpu.localization.Messages;
+import eu.unifiedviews.helpers.dataunit.relational.RelationalHelper;
+import eu.unifiedviews.helpers.dataunit.resource.Resource;
+import eu.unifiedviews.helpers.dataunit.resource.ResourceConverter;
+import eu.unifiedviews.helpers.dataunit.resource.ResourceHelpers;
+import eu.unifiedviews.helpers.dpu.config.ConfigHistory;
+import eu.unifiedviews.helpers.dpu.context.ContextUtils;
+import eu.unifiedviews.helpers.dpu.exec.AbstractDpu;
 import eu.unifiedviews.plugins.loader.relationaldifftockan.DatastoreParams.DatastoreParamsBuilder;
 
 /**
@@ -57,7 +57,7 @@ import eu.unifiedviews.plugins.loader.relationaldifftockan.DatastoreParams.Datas
  * If table (resource) already exists, data is updated
  */
 @DPU.AsLoader
-public class RelationalDiffToCkan extends NonConfigurableBase {
+public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig_V1> {
 
     private static Logger LOG = LoggerFactory.getLogger(RelationalDiffToCkan.class);
 
@@ -107,8 +107,6 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
 
     public static final String CATALOG_API_URL = "dpu.l-relationalDiffToCkan.catalog.api.url";
 
-    private Messages messages;
-
     private DPUContext context;
 
     private Date pipelineStart;
@@ -117,28 +115,26 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
     public RelationalDataUnit tablesInput;
 
     public RelationalDiffToCkan() {
-        super();
+        super(RelationalDiffToCkanVaadinDialog.class, ConfigHistory.noHistory(RelationalDiffToCkanConfig_V1.class));
     }
 
     @Override
-    public void execute(DPUContext context) throws DPUException, InterruptedException {
-        this.context = context;
-        this.messages = new Messages(this.context.getLocale(), this.getClass().getClassLoader());
+    protected void innerExecute() throws DPUException {
+        this.context = this.ctx.getExecMasterContext().getDpuContext();
         this.pipelineStart = new Date();
 
-        String shortMessage = this.messages.getString("dpu.ckan.starting", this.getClass().getSimpleName());
-        this.context.sendMessage(DPUContext.MessageType.INFO, shortMessage);
+        ContextUtils.sendShortInfo(this.ctx, "dpu.ckan.starting", this.getClass().getSimpleName());
 
         Map<String, String> environment = this.context.getEnvironment();
         long pipelineId = this.context.getPipelineId();
         String userId = this.context.getPipelineOwner();
         String token = environment.get(SECRET_TOKEN);
         if (token == null || token.isEmpty()) {
-            throw new DPUException(this.messages.getString("errors.token.missing"));
+            throw ContextUtils.dpuException(this.ctx, "errors.token.missing");
         }
         String catalogApiLocation = environment.get(CATALOG_API_URL);
         if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-            throw new DPUException(this.messages.getString("errors.api.missing"));
+            throw ContextUtils.dpuException(this.ctx, "errors.api.missing");
         }
 
         CatalogApiConfig apiConfig = new CatalogApiConfig(catalogApiLocation, pipelineId, userId, token);
@@ -147,8 +143,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
         try {
             tablesIteration = RelationalHelper.getTables(this.tablesInput).iterator();
         } catch (DataUnitException ex) {
-            this.context.sendMessage(DPUContext.MessageType.ERROR,
-                    this.messages.getString("errors.dpu.failed"), this.messages.getString("errors.tables.iterator"), ex);
+            ContextUtils.sendError(this.ctx, "errors.dpu.failed", ex, "errors.tables.iterator");
             return;
         }
 
@@ -166,8 +161,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                         updateCkanResource(entry, resourceId, apiConfig);
                         updateAuditedDatastoreFromTable(entry, resourceId, apiConfig);
                         LOG.info("Resource and datastore for table {} successfully updated", sourceTableName);
-                        this.context.sendMessage(DPUContext.MessageType.INFO,
-                                this.messages.getString("dpu.resource.updated", sourceTableName));
+                        ContextUtils.sendShortInfo(this.ctx, "dpu.resource.updated", sourceTableName);
 
                     } else {
                         LOG.info("Resource does not exist yet, it will be created");
@@ -179,17 +173,16 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                             LOG.debug("Failed to create datastore for resource {}, going to delete resource", resourceId);
                             deleteCkanResource(resourceId, apiConfig);
                         }
-                        this.context.sendMessage(DPUContext.MessageType.INFO,
-                                this.messages.getString("dpu.resource.created", sourceTableName));
+                        ContextUtils.sendShortInfo(this.ctx, "dpu.resource.created", sourceTableName);
                     }
                 } catch (Exception e) {
                     LOG.error("Failed to create resource / datastore for table {}", sourceTableName, e);
                     this.context.sendMessage(DPUContext.MessageType.ERROR,
-                            this.messages.getString("dpu.resource.upload", sourceTableName));
+                            this.ctx.tr("dpu.resource.upload", sourceTableName));
                 }
             }
         } catch (DataUnitException e) {
-            throw new DPUException(this.messages.getString("errors.dpu.upload"), e);
+            ContextUtils.dpuException(this.ctx, e, "errors.dpu.upload");
         }
     }
 
@@ -221,14 +214,14 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             response = client.execute(httpPost);
             if (response.getStatusLine().getStatusCode() != 200) {
                 LOG.error("Response from CKAN: {}", EntityUtils.toString(response.getEntity()));
-                throw new DPUException(this.messages.getString("dpu.resource.dataseterror", EntityUtils.toString(response.getEntity())));
+                ContextUtils.dpuException(this.ctx, "dpu.resource.dataseterror", EntityUtils.toString(response.getEntity()));
             }
             JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
             JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
             JsonObject responseJson = reader.readObject();
 
             if (!checkResponseSuccess(responseJson)) {
-                throw new DPUException(this.messages.getString("dpu.resource.responseerror"));
+                ContextUtils.dpuException(this.ctx, "dpu.resource.responseerror");
             }
 
             JsonArray resources = responseJson.getJsonObject("result").getJsonArray("resources");
@@ -237,7 +230,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             }
 
         } catch (ParseException | URISyntaxException | IllegalStateException | IOException ex) {
-            throw new DPUException(this.messages.getString("errors.dpu.dataset"), ex);
+            ContextUtils.dpuException(this.ctx, ex, "errors.dpu.dataset");
         } finally {
             RelationalDiffToCkanHelper.tryCloseHttpResponse(response);
             RelationalDiffToCkanHelper.tryCloseHttpClient(client);
@@ -286,7 +279,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
                 JsonObject responseJson = reader.readObject();
 
                 if (!checkResponseSuccess(responseJson)) {
-                    throw new DPUException(this.messages.getString("dpu.resource.responseerror"));
+                    ContextUtils.dpuException(this.ctx, "dpu.resource.responseerror");
                 }
 
                 if (!responseJson.getJsonObject("result").containsKey(CKAN_API_RESOURCE_ID)) {
@@ -328,20 +321,17 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             response = client.execute(httpPost);
             if (response.getStatusLine().getStatusCode() != 200) {
                 LOG.error("Response: {}", EntityUtils.toString(response.getEntity()));
-                this.context.sendMessage(MessageType.WARNING, this.messages.getString("errors.resource.delete"),
-                        this.messages.getString("errors.resource.delete.long"));
+                ContextUtils.sendWarn(this.ctx, "errors.resource.delete", "errors.resource.delete.long");
             } else {
                 if (!checkResponseSuccess(response)) {
-                    this.context.sendMessage(MessageType.WARNING, this.messages.getString("errors.resource.delete"),
-                            this.messages.getString("errors.resource.delete.long"));
+                    ContextUtils.sendWarn(this.ctx, "errors.resource.delete", "errors.resource.delete.long");
                 } else {
                     LOG.debug("Resource {} was successfully deleted", resourceId);
                 }
             }
         } catch (IOException | URISyntaxException | ParseException e) {
             LOG.error("Exception occurred during deleting CKAN resource", e);
-            this.context.sendMessage(MessageType.WARNING, this.messages.getString("errors.resource.delete"),
-                    this.messages.getString("errors.resource.delete.long"));
+            ContextUtils.sendWarn(this.ctx, "errors.resource.delete", "errors.resource.delete.long");
         } finally {
             RelationalDiffToCkanHelper.tryCloseHttpResponse(response);
             RelationalDiffToCkanHelper.tryCloseHttpClient(client);
@@ -428,7 +418,7 @@ public class RelationalDiffToCkan extends NonConfigurableBase {
             List<String> indexes = RelationalDiffToCkanHelper.getTableIndexes(conn, sourceTableName);
             List<String> primaryKeys = RelationalDiffToCkanHelper.getTablePrimaryKeys(conn, sourceTableName);
             if (primaryKeys == null || primaryKeys.isEmpty()) {
-                this.context.sendMessage(MessageType.ERROR, this.messages.getString("errors.primarykeys"));
+                ContextUtils.sendError(this.ctx, "errors.primarykeys", "");
                 throw new Exception("Failed to create audited datastore because primary keys are not defined in source table");
             }
 

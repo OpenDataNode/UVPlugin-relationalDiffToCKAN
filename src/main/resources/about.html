@@ -1,0 +1,14 @@
+<b>L-RelationalDiffToCkan loader</b> can be used load database tables stored in internal dataunit relational database <br/>
+to CKAN as CKAN datastore resource. Name of CKAN resource is the same as name of the input table.
+<p/>
+First time L-RelationalDiffToCkan DPU runs, it loads all the data from source table into CKAN datastore.
+<br/>Each next run of DPU updates data based on data in source database table. It adds new data, modifies existing data if any changes (based on primary key(s))
+<br/> and deletes data that no more exist in source database table (deleted_timestamp set in CKAN datastore, they are not physically deleted)
+<p/>
+In order to work properly, these two parameters must be set in backend config.properties:
+<ul>
+	<li><b>dpu.l-relationalDiffToCkan.catalog.api.url</b> - URL of CKAN API</li>
+	<li><b>dpu.l-relationalDiffToCkan.secret.token</b> - authentication token for target CKAN</li>
+</ul>
+<br/>
+Also, prior to running this DPU, an association between pipeline and CKAN dataset must exist, otherwise DPU fails 
