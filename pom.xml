@@ -9,7 +9,7 @@
   
   <groupId>eu.unifiedviews.plugins</groupId>
   <artifactId>uv-l-relationaldiffToCkan</artifactId>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>bundle</packaging>
   <name>L-RelationalDiffToCkan</name>
   <description>Performs update of input relational data into CKAN datastore using CKAN API and thin proxy</description>
