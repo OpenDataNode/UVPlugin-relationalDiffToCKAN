@@ -103,9 +103,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
     public static final String CKAN_DATASTORE_INDEXES = "indexes";
 
-    public static final String SECRET_TOKEN = "dpu.l-relationalDiffToCkan.secret.token";
+    public static final String SECRET_TOKEN = "dpu.uv-l-relationalDiffToCkan.secret.token";
 
-    public static final String CATALOG_API_URL = "dpu.l-relationalDiffToCkan.catalog.api.url";
+    public static final String CATALOG_API_URL = "dpu.uv-l-relationalDiffToCkan.catalog.api.url";
 
     private DPUContext context;
 
