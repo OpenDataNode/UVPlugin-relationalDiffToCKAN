@@ -560,11 +560,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
         Map<String, String> extrasMap = ResourceConverter.extrasToMap(resource.getExtras());
         if (extrasMap != null && !extrasMap.isEmpty()) {
-            JsonObjectBuilder resourceExtrasBuilder = factory.createObjectBuilder();
             for (Map.Entry<String, String> mapEntry : extrasMap.entrySet()) {
-                resourceExtrasBuilder.add(mapEntry.getKey(), mapEntry.getValue());
+                resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
             }
-            resourceBuilder.add("extras", resourceExtrasBuilder);
         }
 
         resourceBuilder.add(CKAN_API_URL_TYPE, CKAN_API_URL_TYPE_DATASTORE);
