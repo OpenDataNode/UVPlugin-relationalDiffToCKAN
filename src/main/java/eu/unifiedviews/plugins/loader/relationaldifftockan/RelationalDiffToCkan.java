@@ -355,6 +355,7 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         try {
             String storageId = table.getTableName();
             Resource resource = ResourceHelpers.getResource(this.tablesInput, table.getSymbolicName());
+            resource.setCreated(null);
             resource.setName(storageId);
             JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
             resourceBuilder.add(CKAN_API_RESOURCE_ID, resourceId);
