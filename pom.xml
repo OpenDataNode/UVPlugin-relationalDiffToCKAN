@@ -7,7 +7,7 @@
 		<relativePath />
 	</parent>
 
-	<groupId>eu.opendatanode.plugins</groupId>
+	<groupId>org.opendatanode.plugins</groupId>
 	<artifactId>uv-l-relationaldiffToCkan</artifactId>
 	<version>1.0.1-SNAPSHOT</version>
 	<packaging>bundle</packaging>
