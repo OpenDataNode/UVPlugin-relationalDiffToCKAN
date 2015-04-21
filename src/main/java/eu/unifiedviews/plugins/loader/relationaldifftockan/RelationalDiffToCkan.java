@@ -103,9 +103,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
     public static final String CKAN_DATASTORE_INDEXES = "indexes";
 
-    public static final String SECRET_TOKEN = "dpu.l-relationalDiffToCkan.secret.token";
+    public static final String SECRET_TOKEN = "dpu.uv-l-relationalDiffToCkan.secret.token";
 
-    public static final String CATALOG_API_URL = "dpu.l-relationalDiffToCkan.catalog.api.url";
+    public static final String CATALOG_API_URL = "dpu.uv-l-relationalDiffToCkan.catalog.api.url";
 
     private DPUContext context;
 
@@ -355,6 +355,7 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         try {
             String storageId = table.getTableName();
             Resource resource = ResourceHelpers.getResource(this.tablesInput, table.getSymbolicName());
+            resource.setCreated(null);
             resource.setName(storageId);
             JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
             resourceBuilder.add(CKAN_API_RESOURCE_ID, resourceId);
@@ -560,11 +561,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
         Map<String, String> extrasMap = ResourceConverter.extrasToMap(resource.getExtras());
         if (extrasMap != null && !extrasMap.isEmpty()) {
-            JsonObjectBuilder resourceExtrasBuilder = factory.createObjectBuilder();
             for (Map.Entry<String, String> mapEntry : extrasMap.entrySet()) {
-                resourceExtrasBuilder.add(mapEntry.getKey(), mapEntry.getValue());
+                resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
             }
-            resourceBuilder.add("extras", resourceExtrasBuilder);
         }
 
         resourceBuilder.add(CKAN_API_URL_TYPE, CKAN_API_URL_TYPE_DATASTORE);
