@@ -191,9 +191,10 @@ public class RelationalDiffToCkanHelper {
         JsonArrayBuilder fieldsBuilder = factory.createArrayBuilder();
 
         for (ColumnDefinition column : columns) {
+            String dataTypeName = convertDataTypeForCkanIfNeeded(column.getColumnTypeName());
             fieldsBuilder.add(factory.createObjectBuilder()
                     .add("id", column.getColumnName())
-                    .add("type", column.getColumnTypeName()));
+                    .add("type", dataTypeName));
         }
 
         return fieldsBuilder.build();
@@ -236,6 +237,7 @@ public class RelationalDiffToCkanHelper {
                     case Types.VARCHAR:
                     case Types.LONGNVARCHAR:
                     case Types.LONGVARCHAR:
+                    case Types.CLOB:
                         entryBuilder.add(column.getColumnName(), rs.getString(column.getColumnName()));
                         break;
 
@@ -262,8 +264,7 @@ public class RelationalDiffToCkanHelper {
                         break;
 
                     case Types.BLOB:
-                    case Types.CLOB:
-                        // TODO: implement BLOB/CLOB conversion
+                        // TODO: implement BLOB conversion
                         entryBuilder.addNull(column.getColumnName());
                         break;
 
@@ -288,6 +289,45 @@ public class RelationalDiffToCkanHelper {
         }
 
         return recordsBuilder.build();
+    }
+    
+    /**
+     * Mapping from H2 (used as internal dataunit database) types to PostgreSQL types (used in CKAN datastore)
+     * @param dataTypeName SQL type
+     * @return Converted SQL type if needed
+     */
+     private static String convertDataTypeForCkanIfNeeded(String dataTypeName) {
+        String convertedDataTypeName = dataTypeName;
+        switch (dataTypeName.toUpperCase()) {
+            case "CLOB":
+                convertedDataTypeName = "TEXT";
+                break;
+            case "TINYINT":
+                convertedDataTypeName = "SMALLINT";
+                break;
+            case "INT":
+                convertedDataTypeName = "INTEGER";
+                break;
+            case "DOUBLE":
+                convertedDataTypeName = "DOUBLE PRECISION";
+                break;
+            case "IDENTITY":
+                convertedDataTypeName = "BIGINT";
+                break;
+            case "BINARY":
+            case "BLOB":
+                convertedDataTypeName = "BYTEA";
+                break;
+            case "GEOMETRY":
+            case "VARCHAR_IGNORECASE":
+                convertedDataTypeName = "VARCHAR";
+                break;
+            case "ARRAY":
+                convertedDataTypeName = "VARCHAR ARRAY";
+                break;
+        }
+        
+        return convertedDataTypeName;
     }
 
     private static JsonArrayBuilder getSqlArrayAsJsonArray(JsonBuilderFactory factory, Array array) throws SQLException {
