@@ -17,6 +17,7 @@
 
 |Parameter                                       |Description                                                              |
 |------------------------------------------------|-------------------------------------------------------------------------|
+|**CKAN resource name**                          |Name of CKAN resource to be created                                      |
 |                                                |                                                                         |
 
 ***
@@ -43,6 +44,7 @@ In order to work properly, this DPU needs configuration parameters properly set 
 
 |Version          |Release notes               |
 |-----------------|----------------------------|
+|1.1.0            | Resource name in CKAN is now configured by user; Only one table can be processed by DPU |
 |1.0.1            | bug fixes and update in build dependencies |
 |1.0.0            | First version              |
 
