@@ -29,7 +29,6 @@ In order to work properly, this DPU needs configuration parameters properly set 
 |--------------------------------------|----------------------------------------|
 |**org.opendatanode.CKAN.secret.token**    |Token used to authenticate to CKAN, has to be set in backend.properties  |
 |**org.opendatanode.CKAN.api.url** | URL where CKAN api is located, has to be set in backend.properties |
-|**org.opendatanode.CKAN.http.header.[key]** | Custom HTTP header added to requests on CKAN |
 
 ####Deprecated parameters###
 
@@ -45,8 +44,6 @@ They will be removed in 1.1.0 of DPU.
 ```INI
 org.opendatanode.CKAN.secret.token = 12345678901234567890123456789012
 org.opendatanode.CKAN.api.url = ﻿http://localhost:9080/internalcatalog/api/action/internal_api
-org.opendatanode.CKAN.http.header.X-Forwarded-Host = www.myopendatanode.org
-org.opendatanode.CKAN.http.header.X-Forwarded-Proto = https
 ```
 
 ***
@@ -63,6 +60,7 @@ org.opendatanode.CKAN.http.header.X-Forwarded-Proto = https
 
 |Version          |Release notes               |
 |-----------------|----------------------------|
+|1.0.2            | unification of config parameters |
 |1.0.1            | bug fixes and update in build dependencies |
 |1.0.0            | First version              |
 
