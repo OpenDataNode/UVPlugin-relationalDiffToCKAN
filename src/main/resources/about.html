@@ -11,13 +11,5 @@ In order to work properly, these two parameters must be set in backend config.pr
 	<li><b>org.opendatanode.CKAN.secret.token</b> - authentication token for target CKAN</li>
 </ul>
 <p/>
-Optional HTTP header parameters to be sent to CKAN can be defined in backend config.properties as:
-<br/><b>org.opendatanode.CKAN.http.header.[key]</b>
-<p/>
-Corresponding DPU specific parameters can be used, but these are deprecated and will soon be removed:
-<ul>
-	<li><b>dpu.uv-l-relationalDiffToCkan.catalog.api.url</b> - URL of CKAN API</li>
-	<li><b>dpu.uv-l-relationalDiffToCkan.secret.token</b> - authentication token for target CKAN</li>
-</ul>
 <br/>
 Also, prior to running this DPU, an association between pipeline and CKAN dataset must exist, otherwise DPU fails 
