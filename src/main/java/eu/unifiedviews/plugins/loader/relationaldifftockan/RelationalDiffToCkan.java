@@ -105,9 +105,23 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
     public static final String CKAN_DATASTORE_INDEXES = "indexes";
 
-    public static final String SECRET_TOKEN = "dpu.uv-l-relationalDiffToCkan.secret.token";
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_SECRET_TOKEN}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_SECRET_TOKEN = "dpu.uv-l-relationalDiffToCkan.secret.token";
 
-    public static final String CATALOG_API_URL = "dpu.uv-l-relationalDiffToCkan.catalog.api.url";
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_CATALOG_API_URL}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_CATALOG_API_URL = "dpu.uv-l-relationalDiffToCkan.catalog.api.url";
+
+    public static final String CONFIGURATION_SECRET_TOKEN = "org.opendatanode.CKAN.secret.token";
+
+    public static final String CONFIGURATION_CATALOG_API_URL = "org.opendatanode.CKAN.api.url";
+
+    public static final String CONFIGURATION_HTTP_HEADER = "org.opendatanode.CKAN.http.header.";
 
     private DPUContext context;
 
@@ -131,16 +145,31 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         long pipelineId = this.context.getPipelineId();
         String userId = (this.context.getPipelineExecutionOwnerExternalId() != null) ? this.context.getPipelineExecutionOwnerExternalId()
                 : this.context.getPipelineExecutionOwner();
-        String token = environment.get(SECRET_TOKEN);
-        if (token == null || token.isEmpty()) {
-            throw ContextUtils.dpuException(this.ctx, "errors.token.missing");
+        String token = environment.get(CONFIGURATION_SECRET_TOKEN);
+        if (isEmpty(token)) {
+            token = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
+            if (isEmpty(token)) {
+                throw ContextUtils.dpuException(this.ctx, "errors.token.missing");
+            }
         }
-        String catalogApiLocation = environment.get(CATALOG_API_URL);
-        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-            throw ContextUtils.dpuException(this.ctx, "errors.api.missing");
+        String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_URL);
+        if (isEmpty(catalogApiLocation)) {
+            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_URL);
+            if (isEmpty(catalogApiLocation)) {
+                throw ContextUtils.dpuException(this.ctx, "errors.api.missing");
+            }
         }
 
-        CatalogApiConfig apiConfig = new CatalogApiConfig(catalogApiLocation, pipelineId, userId, token);
+        Map<String, String> additionalHttpHeaders = new HashMap<>();
+        for (Map.Entry<String, String> configEntry : environment.entrySet()) {
+            if (configEntry.getKey().startsWith(CONFIGURATION_HTTP_HEADER)) {
+                String headerName = configEntry.getKey().replace(CONFIGURATION_HTTP_HEADER, "");
+                String headerValue = configEntry.getValue();
+                additionalHttpHeaders.put(headerName, headerValue);
+            }
+        }
+
+        CatalogApiConfig apiConfig = new CatalogApiConfig(catalogApiLocation, pipelineId, userId, token, additionalHttpHeaders);
 
         Set<RelationalDataUnit.Entry> internalTables;
         try {
@@ -189,7 +218,7 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
                         this.ctx.tr("dpu.resource.upload", resourceName, sourceTableName));
             }
         } catch (DataUnitException e) {
-            ContextUtils.dpuException(this.ctx, e, "errors.dpu.upload");
+            throw ContextUtils.dpuException(this.ctx, e, "errors.dpu.upload");
         }
     }
 
@@ -210,6 +239,10 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
             uriBuilder.setPath(uriBuilder.getPath());
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            for (Map.Entry<String, String> additionalHeader : apiConfig.getAdditionalHttpHeaders().entrySet()) {
+                httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+            }
+
             HttpEntity entity = MultipartEntityBuilder.create()
                     .addTextBody(PROXY_API_ACTION, CKAN_API_PACKAGE_SHOW, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_PIPELINE_ID, String.valueOf(apiConfig.getPipelineId()), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
@@ -221,14 +254,14 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
             response = client.execute(httpPost);
             if (response.getStatusLine().getStatusCode() != 200) {
                 LOG.error("Response from CKAN: {}", EntityUtils.toString(response.getEntity()));
-                ContextUtils.dpuException(this.ctx, "dpu.resource.dataseterror", EntityUtils.toString(response.getEntity()));
+                throw ContextUtils.dpuException(this.ctx, "dpu.resource.dataseterror", EntityUtils.toString(response.getEntity()));
             }
             JsonReaderFactory readerFactory = Json.createReaderFactory(Collections.<String, Object> emptyMap());
             JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
             JsonObject responseJson = reader.readObject();
 
             if (!checkResponseSuccess(responseJson)) {
-                ContextUtils.dpuException(this.ctx, "dpu.resource.responseerror");
+                throw ContextUtils.dpuException(this.ctx, "dpu.resource.responseerror");
             }
 
             JsonArray resources = responseJson.getJsonObject("result").getJsonArray("resources");
@@ -237,7 +270,7 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
             }
 
         } catch (ParseException | URISyntaxException | IllegalStateException | IOException ex) {
-            ContextUtils.dpuException(this.ctx, ex, "errors.dpu.dataset");
+            throw ContextUtils.dpuException(this.ctx, ex, "errors.dpu.dataset");
         } finally {
             RelationalDiffToCkanHelper.tryCloseHttpResponse(response);
             RelationalDiffToCkanHelper.tryCloseHttpClient(client);
@@ -271,6 +304,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
             URIBuilder uriBuilder = new URIBuilder(apiConfig.getCatalogApiLocation());
             uriBuilder.setPath(uriBuilder.getPath());
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            for (Map.Entry<String, String> additionalHeader : apiConfig.getAdditionalHttpHeaders().entrySet()) {
+                httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+            }
 
             MultipartEntityBuilder builder = buildCommonResourceParams(table, apiConfig);
             builder.addTextBody(PROXY_API_DATA, resourceBuilder.build().toString(), ContentType.APPLICATION_JSON.withCharset("UTF-8"));
@@ -286,7 +322,7 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
                 JsonObject responseJson = reader.readObject();
 
                 if (!checkResponseSuccess(responseJson)) {
-                    ContextUtils.dpuException(this.ctx, "dpu.resource.responseerror");
+                    throw ContextUtils.dpuException(this.ctx, "dpu.resource.responseerror");
                 }
 
                 if (!responseJson.getJsonObject("result").containsKey(CKAN_API_RESOURCE_ID)) {
@@ -316,6 +352,10 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
             uriBuilder.setPath(uriBuilder.getPath());
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            for (Map.Entry<String, String> additionalHeader : apiConfig.getAdditionalHttpHeaders().entrySet()) {
+                httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+            }
+
             HttpEntity entity = MultipartEntityBuilder.create()
                     .addTextBody(PROXY_API_ACTION, CKAN_API_RESOURCE_DELETE, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_PIPELINE_ID, String.valueOf(apiConfig.getPipelineId()), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
@@ -370,6 +410,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
             URIBuilder uriBuilder = new URIBuilder(apiConfig.getCatalogApiLocation());
             uriBuilder.setPath(uriBuilder.getPath());
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            for (Map.Entry<String, String> additionalHeader : apiConfig.getAdditionalHttpHeaders().entrySet()) {
+                httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+            }
 
             MultipartEntityBuilder builder = buildCommonResourceParams(table, apiConfig);
             builder.addTextBody(PROXY_API_DATA, resourceBuilder.build().toString(), ContentType.APPLICATION_JSON.withCharset("UTF-8"));
@@ -441,6 +484,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
             URIBuilder uriBuilder = new URIBuilder(apiConfig.getCatalogApiLocation());
             uriBuilder.setPath(uriBuilder.getPath());
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            for (Map.Entry<String, String> additionalHeader : apiConfig.getAdditionalHttpHeaders().entrySet()) {
+                httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+            }
 
             MultipartEntityBuilder builder = buildCommonResourceParams(table, apiConfig);
             builder.addTextBody(PROXY_API_DATA, datastoreApiJson.toString(), ContentType.APPLICATION_JSON.withCharset("UTF-8"));
@@ -501,6 +547,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
             URIBuilder uriBuilder = new URIBuilder(apiConfig.getCatalogApiLocation());
             uriBuilder.setPath(uriBuilder.getPath());
             HttpPost httpPost = new HttpPost(uriBuilder.build().normalize());
+            for (Map.Entry<String, String> additionalHeader : apiConfig.getAdditionalHttpHeaders().entrySet()) {
+                httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
+            }
 
             MultipartEntityBuilder builder = buildCommonResourceParams(table, apiConfig);
             builder.addTextBody(PROXY_API_DATA, datastoreApiJson.toString(), ContentType.APPLICATION_JSON.withCharset("UTF-8"));
@@ -530,7 +579,7 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
     }
 
     /**
-     * Builds commom multipart parameters for resource API calls
+     * Builds common multipart parameters for resource API calls
      * 
      * @param table
      *            Input database table name
@@ -609,6 +658,13 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         }
 
         return bSuccess;
+    }
+
+    private static boolean isEmpty(String value) {
+        if (value == null || value.isEmpty()) {
+            return true;
+        }
+        return false;
     }
 
 }
