@@ -103,9 +103,21 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
     public static final String CKAN_DATASTORE_INDEXES = "indexes";
 
-    public static final String SECRET_TOKEN = "dpu.uv-l-relationalDiffToCkan.secret.token";
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_SECRET_TOKEN}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_SECRET_TOKEN = "dpu.uv-l-relationalDiffToCkan.secret.token";
 
-    public static final String CATALOG_API_URL = "dpu.uv-l-relationalDiffToCkan.catalog.api.url";
+    /**
+     * @deprecated Global configuration should be used {@link CONFIGURATION_CATALOG_API_URL}
+     */
+    @Deprecated
+    public static final String CONFIGURATION_DPU_CATALOG_API_URL = "dpu.uv-l-relationalDiffToCkan.catalog.api.url";
+
+    public static final String CONFIGURATION_SECRET_TOKEN = "org.opendatanode.CKAN.secret.token";
+
+    public static final String CONFIGURATION_CATALOG_API_URL = "org.opendatanode.CKAN.api.url";
 
     private DPUContext context;
 
@@ -128,13 +140,19 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         Map<String, String> environment = this.context.getEnvironment();
         long pipelineId = this.context.getPipelineId();
         String userId = this.context.getPipelineOwner();
-        String token = environment.get(SECRET_TOKEN);
-        if (token == null || token.isEmpty()) {
-            throw ContextUtils.dpuException(this.ctx, "errors.token.missing");
+        String token = environment.get(CONFIGURATION_SECRET_TOKEN);
+        if (isEmpty(token)) {
+            token = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
+            if (isEmpty(token)) {
+                throw ContextUtils.dpuException(this.ctx, "errors.token.missing");
+            }
         }
-        String catalogApiLocation = environment.get(CATALOG_API_URL);
-        if (catalogApiLocation == null || catalogApiLocation.isEmpty()) {
-            throw ContextUtils.dpuException(this.ctx, "errors.api.missing");
+        String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_URL);
+        if (isEmpty(catalogApiLocation)) {
+            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_URL);
+            if (isEmpty(catalogApiLocation)) {
+                throw ContextUtils.dpuException(this.ctx, "errors.api.missing");
+            }
         }
 
         CatalogApiConfig apiConfig = new CatalogApiConfig(catalogApiLocation, pipelineId, userId, token);
@@ -599,6 +617,13 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         }
 
         return bSuccess;
+    }
+
+    private static boolean isEmpty(String value) {
+        if (value == null || value.isEmpty()) {
+            return true;
+        }
+        return false;
     }
 
 }

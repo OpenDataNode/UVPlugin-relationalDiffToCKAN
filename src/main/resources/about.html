@@ -7,6 +7,12 @@ First time L-RelationalDiffToCkan DPU runs, it loads all the data from source ta
 <p/>
 In order to work properly, these two parameters must be set in backend config.properties:
 <ul>
+	<li><b>org.opendatanode.CKAN.api.url</b> - URL of CKAN API</li>
+	<li><b>org.opendatanode.CKAN.secret.token</b> - authentication token for target CKAN</li>
+</ul>
+<p/>
+Corresponding DPU specific parameters can be used, but these are deprecated and will soon be removed:
+<ul>
 	<li><b>dpu.uv-l-relationalDiffToCkan.catalog.api.url</b> - URL of CKAN API</li>
 	<li><b>dpu.uv-l-relationalDiffToCkan.secret.token</b> - authentication token for target CKAN</li>
 </ul>
