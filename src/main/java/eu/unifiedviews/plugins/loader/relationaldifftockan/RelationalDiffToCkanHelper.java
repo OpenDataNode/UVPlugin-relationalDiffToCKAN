@@ -252,11 +252,11 @@ public class RelationalDiffToCkanHelper {
                         break;
 
                     case Types.DATE:
-                        entryBuilder.add(column.getColumnName(), rs.getDate(column.getColumnName()).toString());
+                        entryBuilder.add(column.getColumnName(), String.valueOf(rs.getDate(column.getColumnName())));
                         break;
 
                     case Types.TIMESTAMP:
-                        entryBuilder.add(column.getColumnName(), rs.getTimestamp(column.getColumnName()).toString());
+                        entryBuilder.add(column.getColumnName(), String.valueOf(rs.getTimestamp(column.getColumnName())));
                         break;
 
                     case Types.ARRAY:
