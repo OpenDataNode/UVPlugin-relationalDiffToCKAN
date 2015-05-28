@@ -466,8 +466,8 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
             stmnt = conn.createStatement();
             tableData = stmnt.executeQuery("SELECT * FROM " + sourceTableName);
             JsonArray records = RelationalDiffToCkanHelper.buildRecordsJson(tableData, columns);
-            List<String> indexes = RelationalDiffToCkanHelper.getTableIndexes(conn, sourceTableName);
             List<String> primaryKeys = RelationalDiffToCkanHelper.getTablePrimaryKeys(conn, sourceTableName);
+            List<String> indexes = RelationalDiffToCkanHelper.getTableIndexes(conn, sourceTableName, primaryKeys);
             if (primaryKeys == null || primaryKeys.isEmpty()) {
                 ContextUtils.sendError(this.ctx, "errors.primarykeys", "");
                 throw new Exception("Failed to create audited datastore because primary keys are not defined in source table");
