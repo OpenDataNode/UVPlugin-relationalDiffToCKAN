@@ -240,8 +240,11 @@ public class RelationalDiffToCkanHelper {
                     case Types.LONGNVARCHAR:
                     case Types.LONGVARCHAR:
                     case Types.CLOB:
-                        entryBuilder.add(column.getColumnName(), rs.getString(column.getColumnName()));
-                        break;
+                        if (rs.getString(column.getColumnName()) != null) {
+                            entryBuilder.add(column.getColumnName(), rs.getString(column.getColumnName()));
+                        } else {
+                            entryBuilder.addNull(column.getColumnName());
+                        }
 
                     case Types.BOOLEAN:
                     case Types.BIT:
