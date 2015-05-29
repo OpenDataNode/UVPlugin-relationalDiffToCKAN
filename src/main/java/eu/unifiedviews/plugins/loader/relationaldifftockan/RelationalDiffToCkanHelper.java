@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -240,11 +242,13 @@ public class RelationalDiffToCkanHelper {
                     case Types.LONGNVARCHAR:
                     case Types.LONGVARCHAR:
                     case Types.CLOB:
-                        if (rs.getString(column.getColumnName()) != null) {
-                            entryBuilder.add(column.getColumnName(), rs.getString(column.getColumnName()));
+                        String stringValue = rs.getString(column.getColumnName());
+                        if (stringValue != null) {
+                            entryBuilder.add(column.getColumnName(), stringValue);
                         } else {
                             entryBuilder.addNull(column.getColumnName());
                         }
+                        break;
 
                     case Types.BOOLEAN:
                     case Types.BIT:
@@ -257,11 +261,21 @@ public class RelationalDiffToCkanHelper {
                         break;
 
                     case Types.DATE:
-                        entryBuilder.add(column.getColumnName(), String.valueOf(rs.getDate(column.getColumnName())));
+                        Date dateValue = rs.getDate(column.getColumnName());
+                        if (dateValue != null) {
+                            entryBuilder.add(column.getColumnName(), String.valueOf(dateValue));
+                        } else {
+                            entryBuilder.addNull(column.getColumnName());
+                        }
                         break;
 
                     case Types.TIMESTAMP:
-                        entryBuilder.add(column.getColumnName(), String.valueOf(rs.getTimestamp(column.getColumnName())));
+                        Timestamp timestampValue = rs.getTimestamp(column.getColumnName());
+                        if (timestampValue != null) {
+                            entryBuilder.add(column.getColumnName(), String.valueOf(timestampValue));
+                        } else {
+                            entryBuilder.addNull(column.getColumnName());
+                        }
                         break;
 
                     case Types.ARRAY:
