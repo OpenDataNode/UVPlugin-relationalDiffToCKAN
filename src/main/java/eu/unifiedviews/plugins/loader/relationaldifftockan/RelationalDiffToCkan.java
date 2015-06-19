@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.ParseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -31,16 +33,27 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.openrdf.model.URI;
+import org.openrdf.model.Value;
+import org.openrdf.repository.RepositoryConnection;
+import org.openrdf.repository.RepositoryException;
+import org.openrdf.repository.RepositoryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.unifiedviews.dataunit.DataUnit;
 import eu.unifiedviews.dataunit.DataUnitException;
+import eu.unifiedviews.dataunit.rdf.RDFDataUnit;
 import eu.unifiedviews.dataunit.relational.RelationalDataUnit;
 import eu.unifiedviews.dataunit.relational.RelationalDataUnit.Entry;
 import eu.unifiedviews.dpu.DPU;
 import eu.unifiedviews.dpu.DPUContext;
 import eu.unifiedviews.dpu.DPUException;
+import eu.unifiedviews.helpers.dataunit.distribution.Distribution;
+import eu.unifiedviews.helpers.dataunit.distribution.DistributionMerger;
+import eu.unifiedviews.helpers.dataunit.distribution.DistributionToResourceConverter;
+import eu.unifiedviews.helpers.dataunit.distribution.DistributionToStatementsConverter;
+import eu.unifiedviews.helpers.dataunit.rdf.RDFHelper;
 import eu.unifiedviews.helpers.dataunit.relational.RelationalHelper;
 import eu.unifiedviews.helpers.dataunit.resource.Resource;
 import eu.unifiedviews.helpers.dataunit.resource.ResourceConverter;
@@ -58,6 +71,7 @@ import eu.unifiedviews.plugins.loader.relationaldifftockan.DatastoreParams.Datas
  */
 @DPU.AsLoader
 public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig_V1> {
+    public static final String distributionSymbolicName = "distributionMetadata";
 
     private static Logger LOG = LoggerFactory.getLogger(RelationalDiffToCkan.class);
 
@@ -123,12 +137,21 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
     public static final String CONFIGURATION_HTTP_HEADER = "org.opendatanode.CKAN.http.header.";
 
+    public static final String CONFIGURATION_USE_EXTRAS = "org.opendatanode.CKAN.use.extras";
+
     private DPUContext context;
 
     private Date pipelineStart;
 
+    private Distribution distributionFromRdfInput;
+
+    private Boolean useExtras;
+
     @DataUnit.AsInput(name = "tablesInput")
     public RelationalDataUnit tablesInput;
+
+    @DataUnit.AsInput(name = "distributionInput", optional = true)
+    public RDFDataUnit distributionInput;
 
     public RelationalDiffToCkan() {
         super(RelationalDiffToCkanVaadinDialog.class, ConfigHistory.noHistory(RelationalDiffToCkanConfig_V1.class));
@@ -142,6 +165,9 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         ContextUtils.sendShortInfo(this.ctx, "dpu.ckan.starting", this.getClass().getSimpleName());
 
         Map<String, String> environment = this.context.getEnvironment();
+
+        useExtras = Boolean.valueOf(environment.get(CONFIGURATION_USE_EXTRAS));
+
         long pipelineId = this.context.getPipelineId();
         String userId = (this.context.getPipelineExecutionOwnerExternalId() != null) ? this.context.getPipelineExecutionOwnerExternalId()
                 : this.context.getPipelineExecutionOwner();
@@ -182,6 +208,26 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         if (internalTables.size() != 1) {
             LOG.error("DPU can process only one input database table; Actual count of tables: {}", internalTables.size());
             throw ContextUtils.dpuException(this.ctx, "errors.input.tables");
+        }
+
+        distributionFromRdfInput = null;
+        if (distributionInput != null) {
+            if (internalTables.size() != 1) {
+                throw ContextUtils.dpuException(this.ctx, "RelationalDiffToCkan.execute.exception.tooManyFilesForOneDistribution");
+            }
+            RepositoryConnection con = null;
+            try {
+                con = distributionInput.getConnection();
+                RepositoryResult<org.openrdf.model.Statement> repositoryResult;
+                repositoryResult = con.getStatements((org.openrdf.model.Resource) null, (URI) null, (Value) null, false, RDFHelper.getGraphsURIArray(distributionInput));
+                List<org.openrdf.model.Statement> statementList = new ArrayList<>();
+                while (repositoryResult.hasNext()) {
+                    statementList.add(repositoryResult.next());
+                }
+                distributionFromRdfInput = DistributionToStatementsConverter.statementsToDistribution(statementList);
+            } catch (RepositoryException | DataUnitException ex) {
+                throw ContextUtils.dpuException(this.ctx, "RelationalDiffToCkan.execute.exception.dataunit");
+            }
         }
 
         Map<String, String> existingResources = getExistingResources(apiConfig);
@@ -298,8 +344,20 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         try {
             String resourceName = this.config.getResourceName();
             Resource resource = ResourceHelpers.getResource(this.tablesInput, table.getSymbolicName());
+            if (distributionFromRdfInput != null) {
+                Distribution distributionFromSymbolicName = DistributionToResourceConverter.resourceToDistribution(resource);
+                Distribution mergedDistribution = DistributionMerger.merge(distributionFromRdfInput, distributionFromSymbolicName);
+                resource = DistributionToResourceConverter.distributionToResource(mergedDistribution);
+                if (StringUtils.isEmpty(resourceName)) {
+                    resourceName = resource.getName();
+                }
+            }
+            if (StringUtils.isEmpty(resourceName)) {
+                resourceName = table.getSymbolicName();
+            }
             resource.setName(resourceName);
-            JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
+
+            JsonObjectBuilder resourceBuilder = buildResource(factory, resource, useExtras);
 
             URIBuilder uriBuilder = new URIBuilder(apiConfig.getCatalogApiLocation());
             uriBuilder.setPath(uriBuilder.getPath());
@@ -402,9 +460,21 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         try {
             String resourceName = this.config.getResourceName();
             Resource resource = ResourceHelpers.getResource(this.tablesInput, table.getSymbolicName());
+            if (distributionFromRdfInput != null) {
+                Distribution distributionFromSymbolicName = DistributionToResourceConverter.resourceToDistribution(resource);
+                Distribution mergedDistribution = DistributionMerger.merge(distributionFromRdfInput, distributionFromSymbolicName);
+                resource = DistributionToResourceConverter.distributionToResource(mergedDistribution);
+                if (StringUtils.isEmpty(resourceName)) {
+                    resourceName = resource.getName();
+                }
+            }
+            if (StringUtils.isEmpty(resourceName)) {
+                resourceName = table.getSymbolicName();
+            }
             resource.setCreated(null);
             resource.setName(resourceName);
-            JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
+
+            JsonObjectBuilder resourceBuilder = buildResource(factory, resource, useExtras);
             resourceBuilder.add(CKAN_API_RESOURCE_ID, resourceId);
 
             URIBuilder uriBuilder = new URIBuilder(apiConfig.getCatalogApiLocation());
@@ -608,20 +678,20 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
      *            Resource to create Json builder from
      * @return JSON representation of provided resource
      */
-    private JsonObjectBuilder buildResource(JsonBuilderFactory factory, Resource resource) {
+    private JsonObjectBuilder buildResource(JsonBuilderFactory factory, Resource resource, boolean useExtras) {
 
         JsonObjectBuilder resourceBuilder = factory.createObjectBuilder();
         for (Map.Entry<String, String> mapEntry : ResourceConverter.resourceToMap(resource).entrySet()) {
             resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
         }
-
-        Map<String, String> extrasMap = ResourceConverter.extrasToMap(resource.getExtras());
-        if (extrasMap != null && !extrasMap.isEmpty()) {
-            for (Map.Entry<String, String> mapEntry : extrasMap.entrySet()) {
-                resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
+        if (useExtras) {
+            Map<String, String> extrasMap = ResourceConverter.extrasToMap(resource.getExtras());
+            if (extrasMap != null && !extrasMap.isEmpty()) {
+                for (Map.Entry<String, String> mapEntry : extrasMap.entrySet()) {
+                    resourceBuilder.add(mapEntry.getKey(), mapEntry.getValue());
+                }
             }
         }
-
         if (this.context.getPipelineExecutionActorExternalId() != null) {
             resourceBuilder.add(CKAN_API_ACTOR_ID, this.context.getPipelineExecutionActorExternalId());
         }
