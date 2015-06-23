@@ -19,7 +19,7 @@
 
 |Parameter                                       |Description                                                              |
 |------------------------------------------------|-------------------------------------------------------------------------|
-|**CKAN resource name**                          |Name of CKAN resource to be created                                      |
+|**CKAN resource name**                          |Name of CKAN resource to be created, this has precedence over input from e-distributionMetadata, and if even that is not set, it will use VirtualPath or symbolic name as resource name.                                      |
 |                                                |                                                                         |
 
 ***
@@ -57,6 +57,7 @@ org.opendatanode.CKAN.http.header.X-Forwarded-Proto = https
 |Name          |Type           |DataUnit           |Description                                  |
 |--------------|---------------|-------------------|---------------------------------------------|
 |tablesInput   |i              |RelationalDataUnit |Tables to be updated in CKAN datastore       |
+|distributionInput |i (optional) |RDFDataUnit | Distribution metadata produced by e-distributionMetadata  |
 
 ***
 
@@ -64,7 +65,7 @@ org.opendatanode.CKAN.http.header.X-Forwarded-Proto = https
 
 |Version          |Release notes               |
 |-----------------|----------------------------|
-|1.1.0            | Resource name in CKAN is now configured by user; Only one table can be processed by DPU |
+|1.1.0            | Resource name in CKAN is now configured by user; Only one table can be processed by DPU. Input from e-distributionMetadata introduced.  |
 |                 | Changes in DPU API v 2.1.0, new actor ID parameter is sent to CKAN if available |
 |1.0.2            | Added possibility to define custom HTTP headers and unification of config parameters |
 |1.0.1            | bug fixes and update in build dependencies |
