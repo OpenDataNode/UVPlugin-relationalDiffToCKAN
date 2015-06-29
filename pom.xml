@@ -15,7 +15,7 @@
 	<description>Performs update of input relational data into CKAN datastore using CKAN API and thin proxy</description>
 
 	<properties>
-		<dpu.package>eu.unifiedviews.plugins.loader.relationaldifftockan</dpu.package>
+		<dpu.package>org.opendatanode.plugins.loader.relationaldifftockan</dpu.package>
 		<dpu.mainClass>RelationalDiffToCkan</dpu.mainClass>
 		<mockito.version>1.10.8</mockito.version>
 		<powermock.version>1.6.1</powermock.version>

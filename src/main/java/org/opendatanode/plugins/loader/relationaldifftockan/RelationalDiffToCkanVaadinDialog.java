@@ -1,4 +1,4 @@
-package eu.unifiedviews.plugins.loader.relationaldifftockan;
+package org.opendatanode.plugins.loader.relationaldifftockan;
 
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.TextField;
@@ -6,6 +6,7 @@ import com.vaadin.ui.VerticalLayout;
 
 import eu.unifiedviews.dpu.config.DPUConfigException;
 import eu.unifiedviews.helpers.dpu.vaadin.dialog.AbstractDialog;
+import eu.unifiedviews.plugins.loader.relationaldifftockan.RelationalDiffToCkanConfig_V1;
 
 public class RelationalDiffToCkanVaadinDialog extends AbstractDialog<RelationalDiffToCkanConfig_V1> {
 

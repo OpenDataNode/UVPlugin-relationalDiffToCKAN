@@ -1,4 +1,4 @@
-package eu.unifiedviews.plugins.loader.relationaldifftockan;
+package org.opendatanode.plugins.loader.relationaldifftockan;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -32,6 +32,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.opendatanode.plugins.loader.relationaldifftockan.DatastoreParams.DatastoreParamsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ import eu.unifiedviews.helpers.dataunit.resource.ResourceMerger;
 import eu.unifiedviews.helpers.dpu.config.ConfigHistory;
 import eu.unifiedviews.helpers.dpu.context.ContextUtils;
 import eu.unifiedviews.helpers.dpu.exec.AbstractDpu;
-import eu.unifiedviews.plugins.loader.relationaldifftockan.DatastoreParams.DatastoreParamsBuilder;
+import eu.unifiedviews.plugins.loader.relationaldifftockan.RelationalDiffToCkanConfig_V1;
 
 /**
  * Loader - updates relational data in external CKAN catalog
