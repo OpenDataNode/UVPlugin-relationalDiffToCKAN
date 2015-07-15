@@ -93,6 +93,8 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
     public static final String CKAN_API_ACTOR_ID = "actor_id";
 
+    public static final String CKAN_API_RESOURCE_CSV_TYPE = "CSV";
+
     public static final String PROXY_API_STORAGE_ID = "storage_id";
 
     public static final String PROXY_API_DATA = "data";
@@ -264,9 +266,11 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
                 httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
             }
 
-            HttpEntity entity = MultipartEntityBuilder.create()
+            HttpEntity entity = MultipartEntityBuilder
+                    .create()
                     .addTextBody(PROXY_API_ACTION, CKAN_API_PACKAGE_SHOW, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
-                    .addTextBody(PROXY_API_PIPELINE_ID, String.valueOf(apiConfig.getPipelineId()), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_PIPELINE_ID, String.valueOf(apiConfig.getPipelineId()),
+                            ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_USER_ID, apiConfig.getUserId(), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_TOKEN, apiConfig.getToken(), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_DATA, "{}", ContentType.TEXT_PLAIN.withCharset("UTF-8"))
@@ -330,6 +334,7 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
                 resourceName = table.getSymbolicName();
             }
             resource.setName(resourceName);
+            resource.setFormat(CKAN_API_RESOURCE_CSV_TYPE);
 
             JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
 
@@ -388,9 +393,11 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
                 httpPost.addHeader(additionalHeader.getKey(), additionalHeader.getValue());
             }
 
-            HttpEntity entity = MultipartEntityBuilder.create()
+            HttpEntity entity = MultipartEntityBuilder
+                    .create()
                     .addTextBody(PROXY_API_ACTION, CKAN_API_RESOURCE_DELETE, ContentType.TEXT_PLAIN.withCharset("UTF-8"))
-                    .addTextBody(PROXY_API_PIPELINE_ID, String.valueOf(apiConfig.getPipelineId()), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
+                    .addTextBody(PROXY_API_PIPELINE_ID, String.valueOf(apiConfig.getPipelineId()),
+                            ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_USER_ID, apiConfig.getUserId(), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_TOKEN, apiConfig.getToken(), ContentType.TEXT_PLAIN.withCharset("UTF-8"))
                     .addTextBody(PROXY_API_DATA, RelationalDiffToCkanHelper.buildDeleteResourceParamters(resourceId).toString(),
@@ -446,7 +453,8 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
             }
             resource.setCreated(null);
             resource.setName(resourceName);
-            
+            resource.setFormat(CKAN_API_RESOURCE_CSV_TYPE);
+
             JsonObjectBuilder resourceBuilder = buildResource(factory, resource);
             resourceBuilder.add(CKAN_API_RESOURCE_ID, resourceId);
 
@@ -493,7 +501,8 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
      * @throws Exception
      *             If error occurs during creating of the datastore definition or data upload
      */
-    private void createAuditedDatastoreFromTable(RelationalDataUnit.Entry table, String resourceId, CatalogApiConfig apiConfig) throws Exception {
+    private void createAuditedDatastoreFromTable(RelationalDataUnit.Entry table, String resourceId, CatalogApiConfig apiConfig)
+            throws Exception {
         Connection conn = null;
         ResultSet tableData = null;
         Statement stmnt = null;
@@ -630,7 +639,8 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
      * @throws DataUnitException
      *             If error occurs
      */
-    private static MultipartEntityBuilder buildCommonResourceParams(RelationalDataUnit.Entry table, CatalogApiConfig apiConfig) throws DataUnitException {
+    private static MultipartEntityBuilder buildCommonResourceParams(RelationalDataUnit.Entry table, CatalogApiConfig apiConfig)
+            throws DataUnitException {
         String storageId = table.getTableName();
 
         MultipartEntityBuilder builder = MultipartEntityBuilder.create()
