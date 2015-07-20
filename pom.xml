@@ -3,13 +3,13 @@
 	<parent>
 		<groupId>eu.unifiedviews</groupId>
 		<artifactId>uv-pom-dpu</artifactId>
-		<version>2.1.0</version>
+		<version>2.1.1-SNAPSHOT</version>
 		<relativePath />
 	</parent>
 
 	<groupId>org.opendatanode.plugins</groupId>
 	<artifactId>uv-l-relationaldiffToCkan</artifactId>
-	<version>1.1.1-SNAPSHOT</version>
+	<version>1.1.2-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<name>L-RelationalDiffToCkan</name>
 	<description>Performs update of input relational data into CKAN datastore using CKAN API and thin proxy</description>
