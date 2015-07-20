@@ -1,4 +1,4 @@
-package eu.unifiedviews.plugins.loader.relationaldifftockan;
+package org.opendatanode.plugins.loader.relationaldifftockan;
 
 import java.util.Date;
 import java.util.List;
