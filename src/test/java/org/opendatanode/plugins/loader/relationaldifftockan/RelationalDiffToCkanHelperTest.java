@@ -1,4 +1,4 @@
-package eu.unifiedviews.plugins.loader.relationaldifftockan;
+package org.opendatanode.plugins.loader.relationaldifftockan;
 
 import java.sql.Date;
 import java.sql.ResultSet;
@@ -16,9 +16,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.opendatanode.plugins.loader.relationaldifftockan.DatastoreParams.DatastoreParamsBuilder;
 
 import eu.unifiedviews.helpers.dataunit.utils.ConvertUtils;
-import eu.unifiedviews.plugins.loader.relationaldifftockan.DatastoreParams.DatastoreParamsBuilder;
 
 public class RelationalDiffToCkanHelperTest {
 
