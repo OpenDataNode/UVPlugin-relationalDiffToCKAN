@@ -1,3 +1,10 @@
+L-RdfToCkan
+----------
+
+v1.1.2-SNAPSHOT
+---
+* Improved description (About)
+
 v1.1.1
 ---
 * DPU sends resource format "CSV" to CKAN
