@@ -112,18 +112,6 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
 
     public static final String CKAN_DATASTORE_INDEXES = "indexes";
 
-    /**
-     * @deprecated Global configuration should be used {@link CONFIGURATION_SECRET_TOKEN}
-     */
-    @Deprecated
-    public static final String CONFIGURATION_DPU_SECRET_TOKEN = "dpu.uv-l-relationalDiffToCkan.secret.token";
-
-    /**
-     * @deprecated Global configuration should be used {@link CONFIGURATION_CATALOG_API_URL}
-     */
-    @Deprecated
-    public static final String CONFIGURATION_DPU_CATALOG_API_URL = "dpu.uv-l-relationalDiffToCkan.catalog.api.url";
-
     public static final String CONFIGURATION_SECRET_TOKEN = "org.opendatanode.CKAN.secret.token";
 
     public static final String CONFIGURATION_CATALOG_API_URL = "org.opendatanode.CKAN.api.url";
@@ -159,17 +147,11 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
                 : this.context.getPipelineExecutionOwner();
         String token = environment.get(CONFIGURATION_SECRET_TOKEN);
         if (isEmpty(token)) {
-            token = environment.get(CONFIGURATION_DPU_SECRET_TOKEN);
-            if (isEmpty(token)) {
-                throw ContextUtils.dpuException(this.ctx, "errors.token.missing");
-            }
+            throw ContextUtils.dpuException(this.ctx, "errors.token.missing");
         }
         String catalogApiLocation = environment.get(CONFIGURATION_CATALOG_API_URL);
         if (isEmpty(catalogApiLocation)) {
-            catalogApiLocation = environment.get(CONFIGURATION_DPU_CATALOG_API_URL);
-            if (isEmpty(catalogApiLocation)) {
-                throw ContextUtils.dpuException(this.ctx, "errors.api.missing");
-            }
+            throw ContextUtils.dpuException(this.ctx, "errors.api.missing");
         }
 
         Map<String, String> additionalHttpHeaders = new HashMap<>();
