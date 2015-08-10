@@ -685,6 +685,7 @@ public class RelationalDiffToCkan extends AbstractDpu<RelationalDiffToCkanConfig
         JsonReader reader = readerFactory.createReader(response.getEntity().getContent());
         JsonObject responseJson = reader.readObject();
 
+        LOG.debug("CKAN Response: {}", responseJson.toString());
         boolean bSuccess = responseJson.getBoolean("success");
 
         LOG.debug("CKAN success response value: {}", bSuccess);
