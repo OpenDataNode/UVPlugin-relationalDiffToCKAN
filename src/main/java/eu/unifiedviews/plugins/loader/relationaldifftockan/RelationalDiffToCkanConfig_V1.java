@@ -1,8 +1,8 @@
 package eu.unifiedviews.plugins.loader.relationaldifftockan;
 
 public class RelationalDiffToCkanConfig_V1 {
-    
-    private String resourceName;
+
+    private String resourceName = "";
 
     public String getResourceName() {
         return this.resourceName;

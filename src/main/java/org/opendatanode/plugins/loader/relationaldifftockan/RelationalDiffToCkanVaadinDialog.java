@@ -1,5 +1,6 @@
 package org.opendatanode.plugins.loader.relationaldifftockan;
 
+import com.vaadin.data.Validator;
 import com.vaadin.ui.Panel;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.VerticalLayout;
@@ -33,16 +34,35 @@ public class RelationalDiffToCkanVaadinDialog extends AbstractDialog<RelationalD
 
         this.txtResourceName = new TextField();
         this.txtResourceName.setNullRepresentation("");
-        this.txtResourceName.setRequired(true);
         this.txtResourceName.setCaption(this.ctx.tr("dialog.ckan.resource.name"));
         this.txtResourceName.setWidth("100%");
         this.txtResourceName.setDescription(this.ctx.tr("dialog.resource.name.help"));
+        this.txtResourceName.addValidator(createResourceNameValidator());
+        this.txtResourceName.setInputPrompt(this.ctx.tr("dialog.resource.name.input"));
         this.mainLayout.addComponent(this.txtResourceName);
 
         Panel panel = new Panel();
         panel.setSizeFull();
         panel.setContent(this.mainLayout);
         setCompositionRoot(panel);
+    }
+
+    private Validator createResourceNameValidator() {
+        Validator validator = new Validator() {
+
+            private static final long serialVersionUID = -186376062628005948L;
+
+            @SuppressWarnings("unqualified-field-access")
+            @Override
+            public void validate(Object value) throws InvalidValueException {
+                if (value == null || (value.getClass() == String.class && !((String) value).isEmpty())) {
+                    return;
+                }
+                throw new Validator.InvalidValueException(ctx.tr("dialog.errors.params"));
+            }
+        };
+
+        return validator;
     }
 
     @Override
@@ -52,11 +72,6 @@ public class RelationalDiffToCkanVaadinDialog extends AbstractDialog<RelationalD
 
     @Override
     protected RelationalDiffToCkanConfig_V1 getConfiguration() throws DPUConfigException {
-        boolean isValid = this.txtResourceName.isValid();
-        if (!isValid) {
-            throw new DPUConfigException(ctx.tr("dialog.errors.params"));
-        }
-
         RelationalDiffToCkanConfig_V1 config = new RelationalDiffToCkanConfig_V1();
         config.setResourceName(this.txtResourceName.getValue());
         return config;
