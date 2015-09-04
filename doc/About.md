@@ -13,4 +13,4 @@ Updates data in CKAN datastore from input relational data
 |Name |Type | DataUnit | Description | Mandatory |
 |:--------|:------:|:------:|:-------------|:---------------------:|
 |tablesInput       |i| RelationalDataUnit |Tables to be updated in CKAN datastore |x|
-|distributionInput |i| RDFDataUnit|Distribution metadata produced by e-distributionMetadata ||
+|distributionInput |i| RDFDataUnit|Distribution metadata produced by e-distributionMetadata | |
