@@ -1,6 +1,10 @@
 L-RdfToCkan
 ----------
 
+v1.1.6-SNAPSHOT
+---
+N/A
+
 v1.1.5-SNAPSHOT
 ---
 * Update to API 2.1.4
