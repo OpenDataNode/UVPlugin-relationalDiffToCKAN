@@ -12,5 +12,5 @@ Aktualizuje dáta v úložisku CKAN z relačných dát na vstupe
 
 |Meno |Typ | Dátová hrana | Popis | Povinné |
 |:--------|:------:|:------:|:-------------|:---------------------:|
-|tablesInput       |i| RelationalDataUnit | Tabuľky, ktoré sa majú aktualizovať v úložisku CKAN|x|
-|distributionInput |i| RDFDataUnit| Distribučné metadáta vytvorené z e-distributionMetadata ||
+|tablesInput       |vstup| RelationalDataUnit | Tabuľky, ktoré sa majú aktualizovať v úložisku CKAN|áno|
+|distributionInput |vstup| RDFDataUnit| Distribučné metadáta vytvorené z e-distributionMetadata | |
