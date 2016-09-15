@@ -218,90 +218,84 @@ public class RelationalDiffToCkanHelper {
         while (rs.next()) {
             JsonObjectBuilder entryBuilder = factory.createObjectBuilder();
             for (ColumnDefinition column : columns) {
-                switch (column.getColumnType()) {
-                    case Types.INTEGER:
-                        entryBuilder.add(column.getColumnName(), rs.getInt(column.getColumnName()));
-                        break;
-                    case Types.BIGINT:
-                        entryBuilder.add(column.getColumnName(), rs.getLong(column.getColumnName()));
-                        break;
+                if (rs.getObject(column.getColumnName()) == null) { // if column value is null
+                    entryBuilder.addNull(column.getColumnName());
+                } else {
+                    switch (column.getColumnType()) {
+                        case Types.INTEGER:
+                            entryBuilder.add(column.getColumnName(), rs.getInt(column.getColumnName()));
+                            break;
+                        case Types.BIGINT:
+                            entryBuilder.add(column.getColumnName(), rs.getLong(column.getColumnName()));
+                            break;
 
-                    case Types.DECIMAL:
-                    case Types.NUMERIC:
-                        entryBuilder.add(column.getColumnName(), rs.getBigDecimal(column.getColumnName()));
-                        break;
+                        case Types.DECIMAL:
+                        case Types.NUMERIC:
+                            entryBuilder.add(column.getColumnName(), rs.getBigDecimal(column.getColumnName()));
+                            break;
 
-                    case Types.FLOAT:
-                    case Types.REAL:
-                    case Types.DOUBLE:
-                        entryBuilder.add(column.getColumnName(), rs.getDouble(column.getColumnName()));
-                        break;
+                        case Types.FLOAT:
+                        case Types.REAL:
+                        case Types.DOUBLE:
+                            entryBuilder.add(column.getColumnName(), rs.getDouble(column.getColumnName()));
+                            break;
 
-                    case Types.NVARCHAR:
-                    case Types.VARCHAR:
-                    case Types.LONGNVARCHAR:
-                    case Types.LONGVARCHAR:
-                    case Types.CLOB:
-                        String stringValue = rs.getString(column.getColumnName());
-                        if (stringValue != null) {
-                            entryBuilder.add(column.getColumnName(), stringValue);
-                        } else {
+                        case Types.NVARCHAR:
+                        case Types.VARCHAR:
+                        case Types.LONGNVARCHAR:
+                        case Types.LONGVARCHAR:
+                        case Types.CLOB:
+                            String stringValue = rs.getString(column.getColumnName());
+                                entryBuilder.add(column.getColumnName(), stringValue);
+                            break;
+
+                        case Types.BOOLEAN:
+                        case Types.BIT:
+                            entryBuilder.add(column.getColumnName(), rs.getBoolean(column.getColumnName()));
+                            break;
+
+                        case Types.TINYINT:
+                        case Types.SMALLINT:
+                            entryBuilder.add(column.getColumnName(), rs.getShort(column.getColumnName()));
+                            break;
+
+                        case Types.DATE:
+                            Date dateValue = rs.getDate(column.getColumnName());
+                                entryBuilder.add(column.getColumnName(), String.valueOf(dateValue));
+                            
+                            break;
+
+                        case Types.TIMESTAMP:
+                            Timestamp timestampValue = rs.getTimestamp(column.getColumnName());
+                                entryBuilder.add(column.getColumnName(), String.valueOf(timestampValue));
+                            
+                            break;
+
+                        case Types.ARRAY:
+                            entryBuilder.add(column.getColumnName(), getSqlArrayAsJsonArray(factory, rs.getArray(column.getColumnName())));
+                            break;
+
+                        case Types.BLOB:
+                            // TODO: implement BLOB conversion
                             entryBuilder.addNull(column.getColumnName());
-                        }
-                        break;
+                            break;
 
-                    case Types.BOOLEAN:
-                    case Types.BIT:
-                        entryBuilder.add(column.getColumnName(), rs.getBoolean(column.getColumnName()));
-                        break;
-
-                    case Types.TINYINT:
-                    case Types.SMALLINT:
-                        entryBuilder.add(column.getColumnName(), rs.getShort(column.getColumnName()));
-                        break;
-
-                    case Types.DATE:
-                        Date dateValue = rs.getDate(column.getColumnName());
-                        if (dateValue != null) {
-                            entryBuilder.add(column.getColumnName(), String.valueOf(dateValue));
-                        } else {
+                        case Types.BINARY:
+                        case Types.VARBINARY:
+                        case Types.LONGVARBINARY:
+                            //TODO: implement binary formats conversion
                             entryBuilder.addNull(column.getColumnName());
-                        }
-                        break;
+                            break;
 
-                    case Types.TIMESTAMP:
-                        Timestamp timestampValue = rs.getTimestamp(column.getColumnName());
-                        if (timestampValue != null) {
-                            entryBuilder.add(column.getColumnName(), String.valueOf(timestampValue));
-                        } else {
+                        case Types.STRUCT:
+                        case Types.DISTINCT:
+                        case Types.REF:
+                        case Types.JAVA_OBJECT:
+                        default:
+                            // TODO: which of these to implement?
                             entryBuilder.addNull(column.getColumnName());
-                        }
-                        break;
-
-                    case Types.ARRAY:
-                        entryBuilder.add(column.getColumnName(), getSqlArrayAsJsonArray(factory, rs.getArray(column.getColumnName())));
-                        break;
-
-                    case Types.BLOB:
-                        // TODO: implement BLOB conversion
-                        entryBuilder.addNull(column.getColumnName());
-                        break;
-
-                    case Types.BINARY:
-                    case Types.VARBINARY:
-                    case Types.LONGVARBINARY:
-                        //TODO: implement binary formats conversion
-                        entryBuilder.addNull(column.getColumnName());
-                        break;
-
-                    case Types.STRUCT:
-                    case Types.DISTINCT:
-                    case Types.REF:
-                    case Types.JAVA_OBJECT:
-                    default:
-                        // TODO: which of these to implement?
-                        entryBuilder.addNull(column.getColumnName());
-                        break;
+                            break;
+                    }
                 }
             }
             recordsBuilder.add(entryBuilder);
