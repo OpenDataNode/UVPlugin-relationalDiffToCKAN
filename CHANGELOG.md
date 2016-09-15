@@ -1,7 +1,7 @@
 L-RdfToCkan
 ----------
 
-v1.1.6-SNAPSHOT
+v1.1.6
 ---
 * Fixed null column values handling for all data types
 
