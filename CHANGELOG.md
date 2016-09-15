@@ -1,6 +1,10 @@
 L-RelationalDiffToCkan
 ----------
 
+v1.1.7-SNAPSHOT
+---
+* N/A
+
 v1.1.6
 ---
 * Fixed null column values handling for all data types
